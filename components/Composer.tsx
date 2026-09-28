@@ -80,9 +80,18 @@ export default function Composer({ conversationId }: { conversationId: string })
               },
               body: JSON.stringify({ conversation_id: item.conversationId }),
             })
-            if (!response.ok) throw new Error('Agent notification failed')
-          } catch {
-            setError('Message sent, but the agent could not be notified.')
+            if (!response.ok) {
+              const responseBody = await response.text()
+              const detail = responseBody.trim().slice(0, 500)
+              setError(
+                `Message sent, but the agent webhook returned HTTP ${response.status}${
+                  detail ? `: ${detail}` : '.'
+                }`,
+              )
+            }
+          } catch (e) {
+            const detail = e instanceof Error ? e.message : 'Network request failed'
+            setError(`Message sent, but the agent could not be notified: ${detail}`)
           }
         }
       }
