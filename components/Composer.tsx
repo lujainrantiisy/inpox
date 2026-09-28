@@ -69,30 +69,24 @@ export default function Composer({ conversationId }: { conversationId: string })
           .eq('id', item.conversationId)
         if (update.error) setError('Message sent, but the conversation preview could not be updated.')
 
-        const webhook = process.env.NEXT_PUBLIC_N8N_AGENT_WEBHOOK
-        if (webhook) {
-          try {
-            const response = await fetch(webhook, {
-              method: 'POST',
-              headers: {
-                'Content-Type': 'application/json',
-                'ngrok-skip-browser-warning': 'true',
-              },
-              body: JSON.stringify({ conversation_id: item.conversationId }),
-            })
-            if (!response.ok) {
-              const responseBody = await response.text()
-              const detail = responseBody.trim().slice(0, 500)
-              setError(
-                `Message sent, but the agent webhook returned HTTP ${response.status}${
-                  detail ? `: ${detail}` : '.'
-                }`,
-              )
-            }
-          } catch (e) {
-            const detail = e instanceof Error ? e.message : 'Network request failed'
-            setError(`Message sent, but the agent could not be notified: ${detail}`)
+        try {
+          const response = await fetch('/api/agent-webhook', {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({ conversation_id: item.conversationId }),
+          })
+          if (!response.ok) {
+            const responseBody = await response.text()
+            const detail = responseBody.trim().slice(0, 500)
+            setError(
+              `Message sent, but the agent webhook returned HTTP ${response.status}${
+                detail ? `: ${detail}` : '.'
+              }`,
+            )
           }
+        } catch (e) {
+          const detail = e instanceof Error ? e.message : 'Network request failed'
+          setError(`Message sent, but the agent could not be notified: ${detail}`)
         }
       }
     } finally {
