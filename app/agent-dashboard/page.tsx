@@ -1,8 +1,7 @@
 import Link from "next/link";
 import { createClient } from "@supabase/supabase-js";
-
+import AutoRefresh from "./AutoRefresh";
 export const dynamic = "force-dynamic";
-
 type Row = {
   created_at: string;
   input_text: string | null;
@@ -94,6 +93,7 @@ export default async function AgentDashboard({
   return (
     <main style={{ padding: 24, fontFamily: "sans-serif" }}>
       <h1>Agent Dashboard (last 7 days)</h1>
+<AutoRefresh seconds={6} />
 
       <div style={{ display: "flex", gap: 16, margin: "16px 0", flexWrap: "wrap" }}>
         {cards.map((c) => (
