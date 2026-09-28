@@ -58,9 +58,15 @@ export default function Page() {
       .on('postgres_changes', { event: '*', schema: 'public', table: 'conversations' }, () => {
         loadConversations()
       })
-      .on('postgres_changes', { event: '*', schema: 'public', table: 'messages' }, () => {
+      .on('postgres_changes', { event: '*', schema: 'public', table: 'messages' }, (payload) => {
+        loadConversations()
         const id = activeIdRef.current
-        if (id) loadMessages(id)
+        const changedConversationId =
+          (payload.new as Partial<Message> | null)?.conversation_id ??
+          (payload.old as Partial<Message> | null)?.conversation_id
+        if (id && (!changedConversationId || changedConversationId === id)) {
+          loadMessages(id)
+        }
       })
       .subscribe()
     return () => {
