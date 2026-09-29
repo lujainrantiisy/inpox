@@ -114,18 +114,22 @@ export default function Page() {
     bottomRef.current?.scrollIntoView({ behavior: 'smooth' })
   }, [messages])
 
-  async function seedDemo() {
+async function seedDemo() {
+    // 1. طلب اسم الزائر من المستخدم عند النقر
+    const customerName = window.prompt("Enter customer name:", "Website visitor") || "Website visitor"
+
+    // 2. إدخال المحادثة بالاسم الجديد في Supabase
     const { data } = await supabase
       .from('conversations')
-      .insert({ contact: 'Website visitor', channel: 'web', last_message: 'New chat' })
+      .insert({ contact: customerName, channel: 'web', last_message: 'New chat' })
       .select()
       .single()
+
     if (data) {
       await loadConversations()
       setActiveId((data as Conversation).id)
     }
   }
-
   // IMPORTANT: this early return must stay AFTER all hooks above.
   if (authStatus === 'checking') {
     return <div className="empty">Loading...</div>
