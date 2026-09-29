@@ -177,7 +177,7 @@ export default async function AgentDashboard({
             <tbody>
               {visible.length === 0 ? (
                 <tr>
-                  <td colSpan={5} style={{ padding: "24px", textAlignment: "center", color: "#8FA3B8" }}>
+                  <td colSpan={5} style={{ padding: "24px", textAlign: "center", color: "#8FA3B8" }}>
                     No rows for this filter.
                   </td>
                 </tr>
