@@ -155,18 +155,28 @@ export default async function AgentDashboard({
           {filterLabel} — showing <strong style={{ color: "#22D3EE" }}>{visible.length}</strong> of {rows.length}
         </p>
 
-        {/* Table Container */}
+        {/* Table Container with Vertical & Horizontal Scroll */}
         <div
           style={{
             background: "rgba(255, 255, 255, 0.04)",
             border: "1px solid rgba(34, 211, 238, 0.18)",
             borderRadius: "12px",
-            overflow: "hidden",
+            maxHeight: "600px",
+            overflowX: "auto",
+            overflowY: "auto",
           }}
         >
           <table style={{ width: "100%", borderCollapse: "collapse", textAlign: "left", fontSize: "14px" }}>
             <thead>
-              <tr style={{ background: "rgba(255, 255, 255, 0.02)", borderBottom: "1px solid rgba(34, 211, 238, 0.18)" }}>
+              <tr
+                style={{
+                  background: "#0F1E2E",
+                  borderBottom: "1px solid rgba(34, 211, 238, 0.18)",
+                  position: "sticky",
+                  top: 0,
+                  zIndex: 10,
+                }}
+              >
                 <th style={{ padding: "12px 16px", color: "#8FA3B8", fontWeight: 600 }}>Time</th>
                 <th style={{ padding: "12px 16px", color: "#8FA3B8", fontWeight: 600 }}>Input</th>
                 <th style={{ padding: "12px 16px", color: "#8FA3B8", fontWeight: 600 }}>Conf.</th>

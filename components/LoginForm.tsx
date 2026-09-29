@@ -2,11 +2,14 @@
 
 import { useState } from 'react'
 import { supabase } from '../lib/supabaseClient'
+import { isValidEmail, normalizeEmail } from '../lib/emailValidation'
 
 export default function LoginForm() {
   const [mode, setMode] = useState<'signin' | 'signup'>('signin')
   const [email, setEmail] = useState('')
+  const [emailError, setEmailError] = useState<string | null>(null)
   const [password, setPassword] = useState('')
+  const [confirmPassword, setConfirmPassword] = useState('')
   const [error, setError] = useState<string | null>(null)
   const [info, setInfo] = useState<string | null>(null)
   const [loading, setLoading] = useState(false)
@@ -15,6 +18,8 @@ export default function LoginForm() {
 
   function switchMode() {
     setMode(isSignup ? 'signin' : 'signup')
+    setConfirmPassword('')
+    setEmailError(null)
     setError(null)
     setInfo(null)
   }
@@ -23,6 +28,29 @@ export default function LoginForm() {
     e.preventDefault()
     setError(null)
     setInfo(null)
+    const normalizedEmail = normalizeEmail(email)
+    setEmail(normalizedEmail)
+    setEmailError(null)
+
+    if (!isValidEmail(normalizedEmail)) {
+      setEmailError('يرجى إدخال بريد إلكتروني صالح مثل name@example.com.')
+      return
+    }
+
+    if (!password) {
+      setError('يرجى إدخال كلمة المرور.')
+      return
+    }
+
+    if (isSignup && !confirmPassword) {
+      setError('يرجى تأكيد كلمة المرور.')
+      return
+    }
+
+    if (isSignup && password !== confirmPassword) {
+      setError('كلمتا المرور غير متطابقتين.')
+      return
+    }
 
     if (isSignup && password.length < 6) {
       setError('يجب أن تتكون كلمة المرور من 6 خانات على الأقل.')
@@ -31,15 +59,18 @@ export default function LoginForm() {
 
     setLoading(true)
     if (isSignup) {
-      const { data, error } = await supabase.auth.signUp({ email, password })
+      const { data, error } = await supabase.auth.signUp({ email: normalizedEmail, password })
       setLoading(false)
       if (error) return setError(error.message)
+      setConfirmPassword('')
       if (!data.session) {
         setInfo('تم إنشاء الحساب بنجاح! يرجى التحقق من بريدك الإلكتروني لتأكيده، ثم تسجيل الدخول.')
         setMode('signin')
+      } else {
+        setInfo('تم إنشاء الحساب وتسجيل الدخول بنجاح.')
       }
     } else {
-      const { error } = await supabase.auth.signInWithPassword({ email, password })
+      const { error } = await supabase.auth.signInWithPassword({ email: normalizedEmail, password })
       setLoading(false)
       if (error) setError(error.message)
     }
@@ -116,7 +147,7 @@ export default function LoginForm() {
               letterSpacing: '-0.02em',
             }}
           >
-            IDEEPS Inbox
+            LUJAIN'S Inbox
           </h1>
           <p style={{ fontSize: '14px', color: '#94A3B8', margin: 0 }}>
             {isSignup ? 'أنشئ حسابك الجديد للبدء' : 'سجّل الدخول وإدارة محادثات فريقك'}
@@ -124,7 +155,7 @@ export default function LoginForm() {
         </div>
 
         {/* Form Section */}
-        <form onSubmit={handleSubmit} style={{ display: 'grid', gap: '20px' }}>
+        <form onSubmit={handleSubmit} noValidate style={{ display: 'grid', gap: '20px' }}>
           <div>
             <label
               style={{
@@ -141,8 +172,10 @@ export default function LoginForm() {
               type="email"
               placeholder="name@company.com"
               value={email}
-              onChange={(e) => setEmail(e.target.value)}
-              required
+              onChange={(e) => {
+                setEmail(e.target.value)
+                if (emailError) setEmailError(null)
+              }}
               style={{
                 width: '100%',
                 padding: '12px 16px',
@@ -158,6 +191,11 @@ export default function LoginForm() {
                 textAlign: 'right',
               }}
             />
+            {emailError && (
+              <p style={{ color: '#F87171', fontSize: '12px', marginTop: '6px' }} role="alert">
+                {emailError}
+              </p>
+            )}
           </div>
 
           <div>
@@ -177,7 +215,6 @@ export default function LoginForm() {
               placeholder={isSignup ? '6 خانات على الأقل' : '••••••••'}
               value={password}
               onChange={(e) => setPassword(e.target.value)}
-              required
               style={{
                 width: '100%',
                 padding: '12px 16px',
@@ -194,6 +231,47 @@ export default function LoginForm() {
               }}
             />
           </div>
+
+          {isSignup && (
+            <div>
+              <label
+                style={{
+                  display: 'block',
+                  fontSize: '13px',
+                  fontWeight: '600',
+                  color: '#CBD5E1',
+                  marginBottom: '8px',
+                }}
+              >
+                تأكيد كلمة المرور
+              </label>
+              <input
+                type="password"
+                placeholder="أعد كتابة كلمة المرور"
+                value={confirmPassword}
+                onChange={(e) => setConfirmPassword(e.target.value)}
+                style={{
+                  width: '100%',
+                  padding: '12px 16px',
+                  borderRadius: '12px',
+                  border: `1px solid ${confirmPassword && password !== confirmPassword ? '#EF4444' : 'rgba(255, 255, 255, 0.12)'}`,
+                  fontSize: '14px',
+                  outline: 'none',
+                  boxSizing: 'border-box',
+                  backgroundColor: 'rgba(15, 23, 42, 0.5)',
+                  color: '#F8FAFC',
+                  transition: 'all 0.2s ease',
+                  direction: 'ltr',
+                  textAlign: 'right',
+                }}
+              />
+              {confirmPassword && password !== confirmPassword && (
+                <p style={{ color: '#F87171', fontSize: '12px', marginTop: '6px' }}>
+                  كلمتا المرور غير متطابقتين.
+                </p>
+              )}
+            </div>
+          )}
 
           {/* Success / Info Message */}
           {info && (
