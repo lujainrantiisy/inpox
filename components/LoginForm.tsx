@@ -4,18 +4,45 @@ import { useState } from 'react'
 import { supabase } from '../lib/supabaseClient'
 
 export default function LoginForm() {
+  const [mode, setMode] = useState<'signin' | 'signup'>('signin')
   const [email, setEmail] = useState('')
   const [password, setPassword] = useState('')
   const [error, setError] = useState<string | null>(null)
+  const [info, setInfo] = useState<string | null>(null)
   const [loading, setLoading] = useState(false)
 
-  async function handleLogin(e: React.FormEvent) {
-    e.preventDefault()
-    setLoading(true)
+  const isSignup = mode === 'signup'
+
+  function switchMode() {
+    setMode(isSignup ? 'signin' : 'signup')
     setError(null)
-    const { error } = await supabase.auth.signInWithPassword({ email, password })
-    setLoading(false)
-    if (error) setError(error.message)
+    setInfo(null)
+  }
+
+  async function handleSubmit(e: React.FormEvent) {
+    e.preventDefault()
+    setError(null)
+    setInfo(null)
+
+    if (isSignup && password.length < 6) {
+      setError('Password must be at least 6 characters.')
+      return
+    }
+
+    setLoading(true)
+    if (isSignup) {
+      const { data, error } = await supabase.auth.signUp({ email, password })
+      setLoading(false)
+      if (error) return setError(error.message)
+      if (!data.session) {
+        setInfo('Account created! Check your email to confirm it, then sign in.')
+        setMode('signin')
+      }
+    } else {
+      const { error } = await supabase.auth.signInWithPassword({ email, password })
+      setLoading(false)
+      if (error) setError(error.message)
+    }
   }
 
   return (
@@ -49,8 +76,7 @@ export default function LoginForm() {
             alignItems: 'center',
             justifyContent: 'center',
             marginBottom: '12px',
-            fontSize: '20px',
-            fontWeight: 'bold'
+            fontSize: '20px'
           }}>
             📥
           </div>
@@ -63,12 +89,12 @@ export default function LoginForm() {
             Team Inbox
           </h1>
           <p style={{ fontSize: '14px', color: '#64748b', margin: 0 }}>
-            Sign in to manage your support conversations
+            {isSignup ? 'Create your new account' : 'Sign in to manage your inbox'}
           </p>
         </div>
 
         {/* Form Section */}
-        <form onSubmit={handleLogin} style={{ display: 'grid', gap: '16px' }}>
+        <form onSubmit={handleSubmit} style={{ display: 'grid', gap: '16px' }}>
           <div>
             <label style={{ 
               display: 'block', 
@@ -94,8 +120,7 @@ export default function LoginForm() {
                 outline: 'none',
                 boxSizing: 'border-box',
                 backgroundColor: '#f8fafc',
-                color: '#0f172a',
-                transition: 'all 0.2s ease'
+                color: '#0f172a'
               }}
             />
           </div>
@@ -112,7 +137,7 @@ export default function LoginForm() {
             </label>
             <input
               type="password"
-              placeholder="••••••••"
+              placeholder={isSignup ? 'At least 6 characters' : '••••••••'}
               value={password}
               onChange={(e) => setPassword(e.target.value)}
               required
@@ -125,13 +150,30 @@ export default function LoginForm() {
                 outline: 'none',
                 boxSizing: 'border-box',
                 backgroundColor: '#f8fafc',
-                color: '#0f172a',
-                transition: 'all 0.2s ease'
+                color: '#0f172a'
               }}
             />
           </div>
 
-          {/* Error Message Alert */}
+          {/* Success / Info Message */}
+          {info && (
+            <div style={{
+              backgroundColor: '#f0fdf4',
+              border: '1px solid #bbf7d0',
+              color: '#16a34a',
+              padding: '10px 12px',
+              borderRadius: '8px',
+              fontSize: '13px',
+              display: 'flex',
+              alignItems: 'center',
+              gap: '8px'
+            }}>
+              <span>✅</span>
+              <span>{info}</span>
+            </div>
+          )}
+
+          {/* Error Message */}
           {error && (
             <div style={{
               backgroundColor: '#fef2f2',
@@ -163,14 +205,32 @@ export default function LoginForm() {
               fontSize: '14px',
               fontWeight: '600',
               cursor: loading ? 'not-allowed' : 'pointer',
-              marginTop: '8px',
+              marginTop: '4px',
               boxShadow: '0 2px 4px rgba(37, 99, 235, 0.2)',
               transition: 'background-color 0.2s ease'
             }}
           >
-            {loading ? 'Signing in...' : 'Sign in'}
+            {loading ? 'Please wait...' : isSignup ? 'Create Account' : 'Sign In'}
           </button>
         </form>
+
+        {/* Toggle Mode Button */}
+        <div style={{ textAlign: 'center', marginTop: '20px' }}>
+          <button
+            type="button"
+            onClick={switchMode}
+            style={{
+              background: 'none',
+              border: 'none',
+              color: '#2563eb',
+              fontSize: '13px',
+              fontWeight: '500',
+              cursor: 'pointer'
+            }}
+          >
+            {isSignup ? 'Already have an account? Sign in' : "New here? Create an account"}
+          </button>
+        </div>
       </div>
     </main>
   )
