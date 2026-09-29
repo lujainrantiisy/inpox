@@ -3,6 +3,7 @@
 import { useEffect, useRef, useState } from 'react'
 import { supabase } from '../lib/supabaseClient'
 import Composer from '../components/Composer'
+import LoginForm from '../components/LoginForm'
 
 type Conversation = {
   id: string
@@ -25,19 +26,26 @@ type Message = {
 }
 
 export default function Page() {
+  const [authStatus, setAuthStatus] = useState<'checking' | 'in' | 'out'>('checking')
   const [conversations, setConversations] = useState<Conversation[]>([])
   const [activeId, setActiveId] = useState<string | null>(null)
   const [messages, setMessages] = useState<Message[]>([])
   const [loading, setLoading] = useState(true)
+  const [loadError, setLoadError] = useState<string | null>(null)
   const activeIdRef = useRef<string | null>(null)
   const bottomRef = useRef<HTMLDivElement | null>(null)
 
   async function loadConversations() {
-    const { data } = await supabase
+    const { data, error } = await supabase
       .from('conversations')
       .select('*')
       .order('updated_at', { ascending: false })
-    setConversations((data as Conversation[]) || [])
+    if (error) {
+      setLoadError(error.message)
+    } else {
+      setLoadError(null)
+      setConversations((data as Conversation[]) || [])
+    }
     setLoading(false)
   }
 
@@ -50,8 +58,28 @@ export default function Page() {
     setMessages((data as Message[]) || [])
   }
 
-  // Load once, then listen for realtime changes on both tables.
+  async function signOut() {
+    await supabase.auth.signOut()
+    setConversations([])
+    setMessages([])
+    setActiveId(null)
+    setLoading(true)
+  }
+
+  // Auth: signed in -> show the inbox, signed out -> show the login form (same URL).
   useEffect(() => {
+    supabase.auth.getSession().then(({ data }) => {
+      setAuthStatus(data.session ? 'in' : 'out')
+    })
+    const { data: sub } = supabase.auth.onAuthStateChange((_event, session) => {
+      setAuthStatus(session ? 'in' : 'out')
+    })
+    return () => sub.subscription.unsubscribe()
+  }, [])
+
+  // Load once (only after we know the user is signed in), then listen for realtime changes.
+  useEffect(() => {
+    if (authStatus !== 'in') return
     loadConversations()
     const channel = supabase
       .channel('inbox-changes')
@@ -72,7 +100,7 @@ export default function Page() {
     return () => {
       supabase.removeChannel(channel)
     }
-  }, [])
+  }, [authStatus])
 
   // When the selected conversation changes, load its messages.
   useEffect(() => {
@@ -98,20 +126,50 @@ export default function Page() {
     }
   }
 
+  // IMPORTANT: this early return must stay AFTER all hooks above.
+  if (authStatus === 'checking') {
+    return <div className="empty">Loading...</div>
+  }
+  if (authStatus === 'out') {
+    return <LoginForm />
+  }
+
   const active = conversations.find((c) => c.id === activeId) || null
 
   return (
     <div className="app">
       <aside className="sidebar">
         <h1>Team Inbox</h1>
-        <div style={{ padding: '10px 16px', borderBottom: '1px solid var(--line)' }}>
+        <div
+          style={{
+            padding: '10px 16px',
+            borderBottom: '1px solid var(--line)',
+            display: 'flex',
+            gap: 8,
+          }}
+        >
           <button className="btn secondary" style={{ height: 36, padding: '0 12px' }} onClick={seedDemo}>
             + New demo chat
+          </button>
+          <button
+            className="btn secondary"
+            style={{ height: 36, padding: '0 12px', marginInlineStart: 'auto' }}
+            onClick={signOut}
+          >
+            Sign out
           </button>
         </div>
         <div className="convo-list">
           {loading && <div className="empty">Loading...</div>}
-          {!loading && conversations.length === 0 && (
+          {!loading && loadError && (
+            <div className="empty" style={{ color: '#e5484d' }}>
+              Couldn’t load conversations.<br />
+              <button className="btn secondary" style={{ marginTop: 8 }} onClick={loadConversations}>
+                Try again
+              </button>
+            </div>
+          )}
+          {!loading && !loadError && conversations.length === 0 && (
             <div className="empty">No conversations yet.<br />Click “+ New demo chat” to start.</div>
           )}
           {conversations.map((c) => (
