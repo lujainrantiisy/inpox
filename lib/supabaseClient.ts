@@ -17,11 +17,21 @@ function isServiceRoleKey(key: string): boolean {
 }
 
 if (!url || !anonKey) {
-  throw new Error('Missing Supabase env vars. Set NEXT_PUBLIC_SUPABASE_URL and the public anon/publishable key.')
+  throw new Error(
+    'متغيرات البيئة الخاصة بـ Supabase مفقودة. يرجى ضبط NEXT_PUBLIC_SUPABASE_URL والمفتاح العام NEXT_PUBLIC_SUPABASE_ANON_KEY.'
+  )
 }
 
 if (isServiceRoleKey(anonKey)) {
-  throw new Error('NEXT_PUBLIC_SUPABASE_ANON_KEY must be a public anon/publishable key, never a service_role key.')
+  throw new Error(
+    'المفتاح NEXT_PUBLIC_SUPABASE_ANON_KEY يجب أن يكون مفتاحاً عاماً (anon/publishable)، ولا يجوز مطلقاً استخدام مفتاح الخدمة (service_role) في الواجهة الأمامية.'
+  )
 }
 
-export const supabase = createClient(url, anonKey)
+export const supabase = createClient(url, anonKey, {
+  auth: {
+    persistSession: true,
+    autoRefreshToken: true,
+    detectSessionInUrl: true,
+  },
+})

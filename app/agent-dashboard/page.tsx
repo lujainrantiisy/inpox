@@ -1,7 +1,9 @@
 import Link from "next/link";
 import { createClient } from "@supabase/supabase-js";
 import AutoRefresh from "./AutoRefresh";
+
 export const dynamic = "force-dynamic";
+
 type Row = {
   created_at: string;
   input_text: string | null;
@@ -18,8 +20,13 @@ export default async function AgentDashboard({
   searchParams: Promise<{ key?: string; filter?: string }>;
 }) {
   const { key, filter: rawFilter } = await searchParams;
+
   if (!process.env.DASHBOARD_KEY || key !== process.env.DASHBOARD_KEY) {
-    return <main style={{ padding: 24 }}>Not authorized</main>;
+    return (
+      <main style={{ padding: 40, background: "#0B1622", color: "#ef4444", fontFamily: "sans-serif", minHeight: "100vh" }}>
+        Not authorized
+      </main>
+    );
   }
 
   const filter: Filter =
@@ -40,7 +47,11 @@ export default async function AgentDashboard({
     .limit(50);
 
   if (error) {
-    return <main style={{ padding: 24 }}>Error: {error.message}</main>;
+    return (
+      <main style={{ padding: 40, background: "#0B1622", color: "#ef4444", fontFamily: "sans-serif", minHeight: "100vh" }}>
+        Error: {error.message}
+      </main>
+    );
   }
 
   const rows: Row[] = data ?? [];
@@ -48,7 +59,6 @@ export default async function AgentDashboard({
   const isLow = (r: Row) => r.confidence != null && Number(r.confidence) < 0.5;
   const isFlagged = (r: Row) => !!r.flag_human;
 
-  // الأرقام دايماً من كل الـ rows، والجدول بس هو اللي بيتفلتر
   const lowCount = rows.filter(isLow).length;
   const flaggedCount = rows.filter(isFlagged).length;
 
@@ -59,23 +69,11 @@ export default async function AgentDashboard({
       ? rows.filter(isFlagged)
       : rows;
 
-  // لو الكرت مختار وضغطتي عليه ثاني مرة، بترجعي للكل
   const hrefFor = (target: Filter) => {
     const next = filter === target ? "all" : target;
     const base = `/agent-dashboard?key=${encodeURIComponent(key!)}`;
     return next === "all" ? base : `${base}&filter=${next}`;
   };
-
-  const cardStyle = (active: boolean): React.CSSProperties => ({
-    border: active ? "2px solid #2563eb" : "1px solid #ddd",
-    background: active ? "#eff6ff" : "white",
-    borderRadius: 8,
-    padding: 16,
-    minWidth: 140,
-    textDecoration: "none",
-    color: "inherit",
-    display: "block",
-  });
 
   const cards: { label: string; value: number; target: Filter }[] = [
     { label: "TURNS", value: rows.length, target: "all" },
@@ -91,61 +89,122 @@ export default async function AgentDashboard({
       : "All turns";
 
   return (
-    <main style={{ padding: 24, fontFamily: "sans-serif" }}>
-      <h1>Agent Dashboard (last 7 days)</h1>
-<AutoRefresh seconds={6} />
+    <main
+      style={{
+        backgroundColor: "#0B1622",
+        color: "#F1F5F9",
+        minHeight: "100vh",
+        padding: "24px",
+        fontFamily: "system-ui, -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif",
+        boxSizing: "border-box",
+      }}
+    >
+      <div style={{ maxWidth: "1200px", margin: "0 auto" }}>
+        {/* Header */}
+        <div
+          style={{
+            display: "flex",
+            justifyContent: "space-between",
+            alignItems: "center",
+            padding: "16px 20px",
+            background: "rgba(255, 255, 255, 0.04)",
+            border: "1px solid rgba(34, 211, 238, 0.18)",
+            borderRadius: "12px",
+            marginBottom: "20px",
+          }}
+        >
+          <h1 style={{ margin: 0, fontSize: "20px", fontWeight: 600, color: "#F1F5F9" }}>
+            Agent Dashboard <span style={{ fontSize: "14px", color: "#8FA3B8", fontWeight: 400 }}>(last 7 days)</span>
+          </h1>
+          <AutoRefresh seconds={6} />
+        </div>
 
-      <div style={{ display: "flex", gap: 16, margin: "16px 0", flexWrap: "wrap" }}>
-        {cards.map((c) => (
-          <Link
-            key={c.label}
-            href={hrefFor(c.target)}
-            style={cardStyle(filter === c.target)}
-          >
-            <div>{c.label}</div>
-            <strong style={{ fontSize: 28 }}>{c.value}</strong>
-          </Link>
-        ))}
-      </div>
+        {/* Filter Cards */}
+        <div style={{ display: "flex", gap: "16px", marginBottom: "20px", flexWrap: "wrap" }}>
+          {cards.map((c) => {
+            const isActive = filter === c.target;
+            return (
+              <Link
+                key={c.label}
+                href={hrefFor(c.target)}
+                style={{
+                  flex: "1 1 200px",
+                  padding: "16px",
+                  borderRadius: "12px",
+                  background: isActive ? "rgba(34, 211, 238, 0.1)" : "rgba(255, 255, 255, 0.04)",
+                  border: isActive ? "1px solid #22D3EE" : "1px solid rgba(34, 211, 238, 0.18)",
+                  color: "#F1F5F9",
+                  textDecoration: "none",
+                  display: "block",
+                  boxSizing: "border-box",
+                }}
+              >
+                <div style={{ fontSize: "12px", color: "#8FA3B8", fontWeight: 600, marginBottom: "8px" }}>
+                  {c.label}
+                </div>
+                <strong style={{ fontSize: "28px", color: isActive ? "#22D3EE" : "#F1F5F9" }}>
+                  {c.value}
+                </strong>
+              </Link>
+            );
+          })}
+        </div>
 
-      <p style={{ color: "#555" }}>
-        {filterLabel} — showing {visible.length} of {rows.length}
-      </p>
+        {/* Info label */}
+        <p style={{ color: "#8FA3B8", fontSize: "14px", marginBottom: "16px" }}>
+          {filterLabel} — showing <strong style={{ color: "#22D3EE" }}>{visible.length}</strong> of {rows.length}
+        </p>
 
-      <div style={{ overflowX: "auto" }}>
-        <table style={{ borderCollapse: "collapse", width: "100%" }}>
-          <thead>
-            <tr>
-              {["Time", "Input", "Conf.", "Flag", "Reason"].map((h) => (
-                <th
-                  key={h}
-                  style={{ textAlign: "left", borderBottom: "1px solid #ccc", padding: 8 }}
-                >
-                  {h}
-                </th>
-              ))}
-            </tr>
-          </thead>
-          <tbody>
-            {visible.length === 0 ? (
-              <tr>
-                <td colSpan={5} style={{ padding: 16, color: "#777" }}>
-                  No rows for this filter.
-                </td>
+        {/* Table Container */}
+        <div
+          style={{
+            background: "rgba(255, 255, 255, 0.04)",
+            border: "1px solid rgba(34, 211, 238, 0.18)",
+            borderRadius: "12px",
+            overflow: "hidden",
+          }}
+        >
+          <table style={{ width: "100%", borderCollapse: "collapse", textAlign: "left", fontSize: "14px" }}>
+            <thead>
+              <tr style={{ background: "rgba(255, 255, 255, 0.02)", borderBottom: "1px solid rgba(34, 211, 238, 0.18)" }}>
+                <th style={{ padding: "12px 16px", color: "#8FA3B8", fontWeight: 600 }}>Time</th>
+                <th style={{ padding: "12px 16px", color: "#8FA3B8", fontWeight: 600 }}>Input</th>
+                <th style={{ padding: "12px 16px", color: "#8FA3B8", fontWeight: 600 }}>Conf.</th>
+                <th style={{ padding: "12px 16px", color: "#8FA3B8", fontWeight: 600 }}>Flag</th>
+                <th style={{ padding: "12px 16px", color: "#8FA3B8", fontWeight: 600 }}>Reason</th>
               </tr>
-            ) : (
-              visible.map((r, i) => (
-                <tr key={i}>
-                  <td style={{ padding: 8 }}>{new Date(r.created_at).toLocaleString()}</td>
-                  <td style={{ padding: 8 }}>{r.input_text}</td>
-                  <td style={{ padding: 8 }}>{r.confidence}</td>
-                  <td style={{ padding: 8 }}>{r.flag_human ? "🚩" : ""}</td>
-                  <td style={{ padding: 8 }}>{r.reason}</td>
+            </thead>
+            <tbody>
+              {visible.length === 0 ? (
+                <tr>
+                  <td colSpan={5} style={{ padding: "24px", textAlignment: "center", color: "#8FA3B8" }}>
+                    No rows for this filter.
+                  </td>
                 </tr>
-              ))
-            )}
-          </tbody>
-        </table>
+              ) : (
+                visible.map((r, i) => (
+                  <tr key={i} style={{ borderBottom: "1px solid rgba(255, 255, 255, 0.05)" }}>
+                    <td style={{ padding: "12px 16px", color: "#8FA3B8", whiteSpace: "nowrap", fontSize: "12px" }}>
+                      {new Date(r.created_at).toLocaleString()}
+                    </td>
+                    <td style={{ padding: "12px 16px", color: "#F1F5F9", maxWidth: "300px" }}>
+                      {r.input_text ?? "-"}
+                    </td>
+                    <td style={{ padding: "12px 16px", color: "#22D3EE", fontWeight: "bold" }}>
+                      {r.confidence != null ? Number(r.confidence).toFixed(2) : "-"}
+                    </td>
+                    <td style={{ padding: "12px 16px" }}>
+                      {r.flag_human ? "🚩" : ""}
+                    </td>
+                    <td style={{ padding: "12px 16px", color: "#8FA3B8", fontSize: "13px" }}>
+                      {r.reason ?? "-"}
+                    </td>
+                  </tr>
+                ))
+              )}
+            </tbody>
+          </table>
+        </div>
       </div>
     </main>
   );

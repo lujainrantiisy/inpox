@@ -66,7 +66,7 @@ export default function Page() {
     setLoading(true)
   }
 
-  // Auth: signed in -> show the inbox, signed out -> show the login form (same URL).
+  // Auth check
   useEffect(() => {
     supabase.auth.getSession().then(({ data }) => {
       setAuthStatus(data.session ? 'in' : 'out')
@@ -77,7 +77,7 @@ export default function Page() {
     return () => sub.subscription.unsubscribe()
   }, [])
 
-  // Load once (only after we know the user is signed in), then listen for realtime changes.
+  // Realtime subscriptions
   useEffect(() => {
     if (authStatus !== 'in') return
     loadConversations()
@@ -102,26 +102,22 @@ export default function Page() {
     }
   }, [authStatus])
 
-  // When the selected conversation changes, load its messages.
   useEffect(() => {
     activeIdRef.current = activeId
     if (activeId) loadMessages(activeId)
     else setMessages([])
   }, [activeId])
 
-  // Auto-scroll to the newest message.
   useEffect(() => {
     bottomRef.current?.scrollIntoView({ behavior: 'smooth' })
   }, [messages])
 
-async function seedDemo() {
-    // 1. طلب اسم الزائر من المستخدم عند النقر
-    const customerName = window.prompt("Enter customer name:", "Website visitor") || "Website visitor"
+  async function seedDemo() {
+    const customerName = window.prompt("Enter customer name:", "زائر الموقع") || "زائر الموقع"
 
-    // 2. إدخال المحادثة بالاسم الجديد في Supabase
     const { data } = await supabase
       .from('conversations')
-      .insert({ contact: customerName, channel: 'web', last_message: 'New chat' })
+      .insert({ contact: customerName, channel: 'web', last_message: 'محادثة جديدة' })
       .select()
       .single()
 
@@ -130,10 +126,62 @@ async function seedDemo() {
       setActiveId((data as Conversation).id)
     }
   }
-  // IMPORTANT: this early return must stay AFTER all hooks above.
-  if (authStatus === 'checking') {
-    return <div className="empty">Loading...</div>
+
+  // Helper formatting for timestamps
+  function formatTime(dateStr?: string) {
+    if (!dateStr) return ''
+    const d = new Date(dateStr)
+    return d.toLocaleTimeString('ar-EG', { hour: '2-digit', minute: '2-digit' })
   }
+
+  // Channel badge icon helper
+  function renderChannelBadge(channelName: string) {
+    const ch = channelName.toLowerCase()
+    return (
+      <span className="channel-pill">
+        {ch === 'instagram' && (
+          <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
+            <rect x="2" y="2" width="20" height="20" rx="5" ry="5"></rect>
+            <path d="M16 11.37A4 4 0 1 1 12.63 8 4 4 0 0 1 16 11.37z"></path>
+            <line x1="17.5" y1="6.5" x2="17.51" y2="6.5"></line>
+          </svg>
+        )}
+        {ch === 'whatsapp' && (
+          <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
+            <path d="M21 11.5a8.38 8.38 0 0 1-.9 3.8 8.5 8.5 0 0 1-7.6 4.7 8.38 8.38 0 0 1-3.8-.9L3 21l1.9-5.7a8.38 8.38 0 0 1-.9-3.8 8.5 8.5 0 0 1 4.7-7.6 8.38 8.38 0 0 1 3.8-.9h.5a8.48 8.48 0 0 1 8 8v.5z"></path>
+          </svg>
+        )}
+        {ch === 'facebook' && (
+          <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
+            <path d="M18 2h-3a5 5 0 0 0-5 5v3H7v4h3v8h4v-8h3l1-4h-4V7a1 1 0 0 1 1-1h3z"></path>
+          </svg>
+        )}
+        {(ch === 'web' || !['instagram', 'whatsapp', 'facebook'].includes(ch)) && (
+          <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
+            <circle cx="12" cy="12" r="10"></circle>
+            <line x1="2" y1="12" x2="22" y2="12"></line>
+            <path d="M12 2a15.3 15.3 0 0 1 4 10 15.3 15.3 0 0 1-4 10 15.3 15.3 0 0 1-4-10 15.3 15.3 0 0 1 4-10z"></path>
+          </svg>
+        )}
+        {channelName.toUpperCase()}
+      </span>
+    )
+  }
+
+  if (authStatus === 'checking') {
+    return (
+      <div className="empty" style={{ height: '100vh' }}>
+        <div className="empty-orb">
+          <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
+            <circle cx="12" cy="12" r="10"></circle>
+            <path d="M12 6v6l4 2"></path>
+          </svg>
+        </div>
+        <span>جاري التحميل...</span>
+      </div>
+    )
+  }
+
   if (authStatus === 'out') {
     return <LoginForm />
   }
@@ -141,113 +189,153 @@ async function seedDemo() {
   const active = conversations.find((c) => c.id === activeId) || null
 
   return (
-    <div className="app">
+    <div className={`app ${activeId ? 'mobile-chat-open' : ''}`}>
+      {/* Sidebar - Positioned on the Right in RTL */}
       <aside className="sidebar">
-        <h1>Team Inbox</h1>
-        <div
-          style={{
-            padding: '10px 16px',
-            borderBottom: '1px solid var(--line)',
-            display: 'flex',
-            gap: 8,
-          }}
-        >
-          <button className="btn secondary" style={{ height: 36, padding: '0 12px' }} onClick={seedDemo}>
-            + New demo chat
-          </button>
-          <button
-            className="btn secondary"
-            style={{ height: 36, padding: '0 12px', marginInlineStart: 'auto' }}
-            onClick={signOut}
-          >
-            Sign out
-          </button>
+        <div className="sidebar-header">
+          <div className="sidebar-title-row">
+            <span className="glowing-dot" />
+            <h1>صندوق الفريق</h1>
+          </div>
+          <div className="sidebar-actions">
+            <button className="btn" style={{ flex: 1 }} onClick={seedDemo}>
+              + محادثة تجريبية
+            </button>
+            <button className="btn secondary" onClick={signOut} aria-label="تسجيل الخروج">
+              تسجيل الخروج
+            </button>
+          </div>
         </div>
+
         <div className="convo-list">
-          {loading && <div className="empty">Loading...</div>}
+          {loading && (
+            <div className="empty">
+              <span>جاري تحميل المحادثات...</span>
+            </div>
+          )}
+
           {!loading && loadError && (
-            <div className="empty" style={{ color: '#e5484d' }}>
-              Couldn’t load conversations.<br />
+            <div className="empty" style={{ color: '#EF4444' }}>
+              تعذر تحميل المحادثات.
               <button className="btn secondary" style={{ marginTop: 8 }} onClick={loadConversations}>
-                Try again
+                إعادة المحاولة
               </button>
             </div>
           )}
+
           {!loading && !loadError && conversations.length === 0 && (
-            <div className="empty">No conversations yet.<br />Click “+ New demo chat” to start.</div>
+            <div className="empty">
+              <div className="empty-orb">
+                <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
+                  <path d="M21 15a2 2 0 0 1-2 2H7l-4 4V5a2 2 0 0 1 2-2h14a2 2 0 0 1 2 2z"></path>
+                </svg>
+              </div>
+              <span>لا توجد محادثات بعد</span>
+            </div>
           )}
+
           {conversations.map((c) => (
             <div
               key={c.id}
               className={'convo' + (c.id === activeId ? ' active' : '')}
               onClick={() => setActiveId(c.id)}
             >
-              <div className="top">
-                <span className="name">
-                  {c.contact}
-                  {c.needs_human && (
-                    <span
-                      title="بحاجة لمراجعة موظف"
-                      style={{
-                        marginInlineStart: 6,
-                        display: 'inline-block',
-                        fontSize: 11,
-                        fontWeight: 700,
-                        color: '#fff',
-                        background: '#e5484d',
-                        borderRadius: 999,
-                        padding: '1px 7px',
-                        verticalAlign: 'middle',
-                      }}
-                    >
-                      ⚠ يحتاج موظف
-                    </span>
-                  )}
-                </span>
-                <span className="chan">{c.channel}</span>
+              <div className="convo-avatar">
+                {c.contact ? c.contact.charAt(0).toUpperCase() : 'U'}
               </div>
-              <div className="preview">{c.last_message || 'No messages yet'}</div>
+              <div className="convo-info">
+                <div className="top">
+                  <span className="name">{c.contact}</span>
+                  <span className="convo-time">{formatTime(c.updated_at)}</span>
+                </div>
+                <div className="convo-bottom">
+                  <span className="preview">{c.last_message || 'لا توجد رسائل بعد'}</span>
+                  {renderChannelBadge(c.channel)}
+                  {c.unread > 0 && <span className="unread-dot" />}
+                </div>
+              </div>
             </div>
           ))}
         </div>
       </aside>
 
+      {/* Main Chat Thread */}
       <main className="thread">
-        {!active && <div className="empty">Pick a conversation to see the messages.</div>}
+        {!active && (
+          <div className="empty">
+            <div className="empty-orb">
+              <svg width="28" height="28" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
+                <path d="M21 15a2 2 0 0 1-2 2H7l-4 4V5a2 2 0 0 1 2-2h14a2 2 0 0 1 2 2z"></path>
+              </svg>
+            </div>
+            <span>اختر محادثة للبدء</span>
+          </div>
+        )}
+
         {active && (
           <>
             <div className="thread-header">
-              {active.contact} · <span style={{ color: 'var(--muted)', fontWeight: 400 }}>{active.channel}</span>
-              {active.needs_human && (
-                <span
-                  style={{
-                    marginInlineStart: 10,
-                    display: 'inline-block',
-                    fontSize: 12,
-                    fontWeight: 700,
-                    color: '#fff',
-                    background: '#e5484d',
-                    borderRadius: 999,
-                    padding: '2px 10px',
-                    verticalAlign: 'middle',
-                  }}
+              <div className="header-user-info">
+                {/* Mobile Back Button */}
+                <button
+                  className="mobile-back-btn"
+                  onClick={() => setActiveId(null)}
+                  aria-label="العودة للقائمة"
                 >
-                  ⚠ تم تحويل المحادثة لموظف
-                </span>
-              )}
+                  <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
+                    <path d="M19 12H5M12 19l-7-7 7-7" />
+                  </svg>
+                </button>
+
+                <span className="header-user-name">{active.contact}</span>
+                {renderChannelBadge(active.channel)}
+
+                {active.needs_human && (
+                  <span
+                    style={{
+                      fontSize: 11,
+                      fontWeight: 700,
+                      color: '#F87171',
+                      background: 'rgba(239, 68, 68, 0.15)',
+                      border: '1px solid rgba(239, 68, 68, 0.3)',
+                      borderRadius: 999,
+                      padding: '2px 8px',
+                    }}
+                  >
+                    ⚠ يحتاج موظف
+                  </span>
+                )}
+              </div>
+
+              <div className="agent-status">
+                <span className="pulse-dot" />
+                <span>الوكيل نشط</span>
+              </div>
             </div>
+
             <div className="messages">
               {messages.map((m) => (
                 <div key={m.id} className={'row ' + m.role}>
+                  {m.role === 'agent' && (
+                    <div className="agent-label">
+                      <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
+                        <polygon points="12 2 15.09 8.26 22 9.27 17 14.14 18.18 21.02 12 17.77 5.82 21.02 7 14.14 2 9.27 8.91 8.26 12 2"></polygon>
+                      </svg>
+                      <span>AI Agent</span>
+                    </div>
+                  )}
+
                   <div className={'bubble ' + m.role}>
-                    <div className="who">{m.role === 'agent' ? 'Agent' : active.contact}</div>
                     {m.body}
-                    {m.image_url && <img src={m.image_url} alt="attachment" />}
+                    {m.image_url && <img src={m.image_url} alt="مرفق" />}
                   </div>
+
+                  <span className="msg-time">{formatTime(m.created_at)}</span>
                 </div>
               ))}
               <div ref={bottomRef} />
             </div>
+
             <Composer conversationId={active.id} />
           </>
         )}
