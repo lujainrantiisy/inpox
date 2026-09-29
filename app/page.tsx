@@ -1,9 +1,13 @@
 "use client"
 
 import { useEffect, useRef, useState } from 'react'
+import { useRouter } from 'next/navigation'
 import { supabase } from '../lib/supabaseClient'
 import Composer from '../components/Composer'
 import LoginForm from '../components/LoginForm'
+
+// ايميل الأدمن المسموح له برؤية الزر
+const ADMIN_EMAIL = "lujain@ideeps.ai"
 
 type Conversation = {
   id: string
@@ -26,7 +30,9 @@ type Message = {
 }
 
 export default function Page() {
+  const router = useRouter()
   const [authStatus, setAuthStatus] = useState<'checking' | 'in' | 'out'>('checking')
+  const [isAdmin, setIsAdmin] = useState(false)
   const [conversations, setConversations] = useState<Conversation[]>([])
   const [activeId, setActiveId] = useState<string | null>(null)
   const [messages, setMessages] = useState<Message[]>([])
@@ -63,16 +69,29 @@ export default function Page() {
     setConversations([])
     setMessages([])
     setActiveId(null)
+    setIsAdmin(false)
     setLoading(true)
   }
 
-  // Auth check
+  // Auth check & Admin check
   useEffect(() => {
     supabase.auth.getSession().then(({ data }) => {
+      const user = data.session?.user
       setAuthStatus(data.session ? 'in' : 'out')
+      if (user && user.email?.toLowerCase() === ADMIN_EMAIL.toLowerCase()) {
+        setIsAdmin(true)
+      } else {
+        setIsAdmin(false)
+      }
     })
     const { data: sub } = supabase.auth.onAuthStateChange((_event, session) => {
+      const user = session?.user
       setAuthStatus(session ? 'in' : 'out')
+      if (user && user.email?.toLowerCase() === ADMIN_EMAIL.toLowerCase()) {
+        setIsAdmin(true)
+      } else {
+        setIsAdmin(false)
+      }
     })
     return () => sub.subscription.unsubscribe()
   }, [])
@@ -197,10 +216,22 @@ export default function Page() {
             <span className="glowing-dot" />
             <h1>صندوق الفريق</h1>
           </div>
-          <div className="sidebar-actions">
+          <div className="sidebar-actions" style={{ gap: '6px', flexWrap: 'wrap' }}>
             <button className="btn" style={{ flex: 1 }} onClick={seedDemo}>
               + محادثة تجريبية
             </button>
+
+            {/* زر لوحة التحكم يظهر للأدمن فقط */}
+            {isAdmin && (
+              <button
+                className="btn secondary"
+                onClick={() => router.push('/agent-dashboard?key=2299220055&filter=flagged')}
+                style={{ borderColor: 'rgba(34, 211, 238, 0.4)', color: '#22D3EE' }}
+              >
+                📊 Dashboard
+              </button>
+            )}
+
             <button className="btn secondary" onClick={signOut} aria-label="تسجيل الخروج">
               تسجيل الخروج
             </button>

@@ -111,11 +111,37 @@ export default async function AgentDashboard({
             border: "1px solid rgba(34, 211, 238, 0.18)",
             borderRadius: "12px",
             marginBottom: "20px",
+            flexWrap: "wrap",
+            gap: "12px",
           }}
         >
-          <h1 style={{ margin: 0, fontSize: "20px", fontWeight: 600, color: "#F1F5F9" }}>
-            Agent Dashboard <span style={{ fontSize: "14px", color: "#8FA3B8", fontWeight: 400 }}>(last 7 days)</span>
-          </h1>
+          <div style={{ display: "flex", alignItems: "center", gap: "16px" }}>
+            {/* زر العودة للصندوق الرئيسي */}
+            <Link
+              href="/"
+              style={{
+                display: "inline-flex",
+                alignItems: "center",
+                gap: "6px",
+                padding: "8px 14px",
+                borderRadius: "8px",
+                background: "rgba(34, 211, 238, 0.1)",
+                border: "1px solid rgba(34, 211, 238, 0.3)",
+                color: "#22D3EE",
+                textDecoration: "none",
+                fontSize: "13px",
+                fontWeight: 600,
+                transition: "all 0.2s",
+              }}
+            >
+              ← العودة للصندوق
+            </Link>
+
+            <h1 style={{ margin: 0, fontSize: "20px", fontWeight: 600, color: "#F1F5F9" }}>
+              Agent Dashboard <span style={{ fontSize: "14px", color: "#8FA3B8", fontWeight: 400 }}>(last 7 days)</span>
+            </h1>
+          </div>
+
           <AutoRefresh seconds={6} />
         </div>
 
