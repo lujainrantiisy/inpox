@@ -6,8 +6,15 @@ import { supabase } from '../lib/supabaseClient'
 import Composer from '../components/Composer'
 import LoginForm from '../components/LoginForm'
 
-// ايميل الأدمن المسموح له برؤية الزر
+// Allowed admin email to view the dashboard button
 const ADMIN_EMAIL = "lujain@ideeps.ai"
+
+// Mood Badge: Emoji for each mood
+const MOOD_EMOJI: Record<string, string> = {
+  negative: '😡',
+  neutral: '🙂',
+  positive: '😍',
+}
 
 type Conversation = {
   id: string
@@ -38,8 +45,32 @@ export default function Page() {
   const [messages, setMessages] = useState<Message[]>([])
   const [loading, setLoading] = useState(true)
   const [loadError, setLoadError] = useState<string | null>(null)
+  const [moods, setMoods] = useState<Record<string, string>>({})
   const activeIdRef = useRef<string | null>(null)
   const bottomRef = useRef<HTMLDivElement | null>(null)
+
+  // Mood Badge: Get latest mood per conversation from agent_decisions
+  async function loadMoods(ids: string[]) {
+    if (ids.length === 0) {
+      setMoods({})
+      return
+    }
+    const { data, error } = await supabase
+      .from('agent_decisions')
+      .select('conversation_id, mood, created_at')
+      .in('conversation_id', ids)
+      .not('mood', 'is', null)
+      .order('created_at', { ascending: false })
+
+    if (error || !data) return
+
+    // Most recent first, so the first row per conversation holds the latest mood
+    const map: Record<string, string> = {}
+    for (const row of data) {
+      if (!(row.conversation_id in map)) map[row.conversation_id] = row.mood
+    }
+    setMoods(map)
+  }
 
   async function loadConversations() {
     const { data, error } = await supabase
@@ -50,7 +81,9 @@ export default function Page() {
       setLoadError(error.message)
     } else {
       setLoadError(null)
-      setConversations((data as Conversation[]) || [])
+      const list = (data as Conversation[]) || []
+      setConversations(list)
+      loadMoods(list.map((c) => c.id))
     }
     setLoading(false)
   }
@@ -70,6 +103,7 @@ export default function Page() {
     setMessages([])
     setActiveId(null)
     setIsAdmin(false)
+    setMoods({})
     setLoading(true)
   }
 
@@ -132,11 +166,11 @@ export default function Page() {
   }, [messages])
 
   async function seedDemo() {
-    const customerName = window.prompt("Enter customer name:", "زائر الموقع") || "زائر الموقع"
+    const customerName = window.prompt("Enter customer name:", "Website Visitor") || "Website Visitor"
 
     const { data } = await supabase
       .from('conversations')
-      .insert({ contact: customerName, channel: 'web', last_message: 'محادثة جديدة' })
+      .insert({ contact: customerName, channel: 'web', last_message: 'New conversation' })
       .select()
       .single()
 
@@ -150,7 +184,7 @@ export default function Page() {
   function formatTime(dateStr?: string) {
     if (!dateStr) return ''
     const d = new Date(dateStr)
-    return d.toLocaleTimeString('ar-EG', { hour: '2-digit', minute: '2-digit' })
+    return d.toLocaleTimeString('en-US', { hour: '2-digit', minute: '2-digit' })
   }
 
   // Channel badge icon helper
@@ -196,7 +230,7 @@ export default function Page() {
             <path d="M12 6v6l4 2"></path>
           </svg>
         </div>
-        <span>جاري التحميل...</span>
+        <span>Loading...</span>
       </div>
     )
   }
@@ -209,19 +243,19 @@ export default function Page() {
 
   return (
     <div className={`app ${activeId ? 'mobile-chat-open' : ''}`}>
-      {/* Sidebar - Positioned on the Right in RTL */}
+      {/* Sidebar */}
       <aside className="sidebar">
         <div className="sidebar-header">
           <div className="sidebar-title-row">
             <span className="glowing-dot" />
-            <h1>صندوق الفريق</h1>
+            <h1>Inbox</h1>
           </div>
           <div className="sidebar-actions" style={{ gap: '6px', flexWrap: 'wrap' }}>
-            <button className="btn" style={{ flex: 1 }} onClick={seedDemo}>
-              + محادثة تجريبية
+            <button className="btn" style={{ flex: '1 1 100%' }} onClick={seedDemo}>
+              + New Chat
             </button>
 
-            {/* زر لوحة التحكم يظهر للأدمن فقط */}
+            {/* Dashboard button - Visible to admin only */}
             {isAdmin && (
               <button
                 className="btn secondary"
@@ -232,8 +266,8 @@ export default function Page() {
               </button>
             )}
 
-            <button className="btn secondary" onClick={signOut} aria-label="تسجيل الخروج">
-              تسجيل الخروج
+            <button className="btn secondary" onClick={signOut} aria-label="Sign Out">
+              Sign Out
             </button>
           </div>
         </div>
@@ -241,15 +275,15 @@ export default function Page() {
         <div className="convo-list">
           {loading && (
             <div className="empty">
-              <span>جاري تحميل المحادثات...</span>
+              <span>Loading conversations...</span>
             </div>
           )}
 
           {!loading && loadError && (
             <div className="empty" style={{ color: '#EF4444' }}>
-              تعذر تحميل المحادثات.
+              Failed to load conversations.
               <button className="btn secondary" style={{ marginTop: 8 }} onClick={loadConversations}>
-                إعادة المحاولة
+                Retry
               </button>
             </div>
           )}
@@ -261,7 +295,7 @@ export default function Page() {
                   <path d="M21 15a2 2 0 0 1-2 2H7l-4 4V5a2 2 0 0 1 2-2h14a2 2 0 0 1 2 2z"></path>
                 </svg>
               </div>
-              <span>لا توجد محادثات بعد</span>
+              <span>No conversations yet</span>
             </div>
           )}
 
@@ -277,10 +311,15 @@ export default function Page() {
               <div className="convo-info">
                 <div className="top">
                   <span className="name">{c.contact}</span>
+                  {moods[c.id] && (
+                    <span className="mood-badge" title={moods[c.id]}>
+                      {MOOD_EMOJI[moods[c.id]]}
+                    </span>
+                  )}
                   <span className="convo-time">{formatTime(c.updated_at)}</span>
                 </div>
                 <div className="convo-bottom">
-                  <span className="preview">{c.last_message || 'لا توجد رسائل بعد'}</span>
+                  <span className="preview">{c.last_message || 'No messages yet'}</span>
                   {renderChannelBadge(c.channel)}
                   {c.unread > 0 && <span className="unread-dot" />}
                 </div>
@@ -299,7 +338,7 @@ export default function Page() {
                 <path d="M21 15a2 2 0 0 1-2 2H7l-4 4V5a2 2 0 0 1 2-2h14a2 2 0 0 1 2 2z"></path>
               </svg>
             </div>
-            <span>اختر محادثة للبدء</span>
+            <span>Select a conversation to start</span>
           </div>
         )}
 
@@ -311,7 +350,7 @@ export default function Page() {
                 <button
                   className="mobile-back-btn"
                   onClick={() => setActiveId(null)}
-                  aria-label="العودة للقائمة"
+                  aria-label="Back to list"
                 >
                   <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
                     <path d="M19 12H5M12 19l-7-7 7-7" />
@@ -333,14 +372,14 @@ export default function Page() {
                       padding: '2px 8px',
                     }}
                   >
-                    ⚠ يحتاج موظف
+                    ⚠ Human needed
                   </span>
                 )}
               </div>
 
               <div className="agent-status">
                 <span className="pulse-dot" />
-                <span>الوكيل نشط</span>
+                <span>Agent Active</span>
               </div>
             </div>
 
@@ -358,7 +397,7 @@ export default function Page() {
 
                   <div className={'bubble ' + m.role}>
                     {m.body}
-                    {m.image_url && <img src={m.image_url} alt="مرفق" />}
+                    {m.image_url && <img src={m.image_url} alt="Attachment" />}
                   </div>
 
                   <span className="msg-time">{formatTime(m.created_at)}</span>

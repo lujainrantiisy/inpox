@@ -212,12 +212,14 @@ body::after {
 
 .convo .top {
   display: flex;
-  justify-content: space-between;
   align-items: center;
+  gap: 6px;
   margin-bottom: 4px;
 }
 
 .convo .name {
+  flex: 1;
+  min-width: 0;
   font-weight: 600;
   font-size: 14px;
   color: var(--text);
@@ -225,10 +227,14 @@ body::after {
   overflow: hidden;
   text-overflow: ellipsis;
 }
-
 .convo-time {
   font-size: 11px;
   color: var(--text-muted);
+}
+.mood-badge {
+  flex-shrink: 0;
+  font-size: 16px;
+  line-height: 1;
 }
 
 .convo-bottom {
@@ -526,6 +532,8 @@ body::after {
 
 /* Buttons */
 .btn {
+  white-space: nowrap;
+  flex-shrink: 0;
   border: 0;
   background: linear-gradient(135deg, var(--cyan) 0%, var(--blue) 100%);
   color: #0B1622;

@@ -33,27 +33,27 @@ export default function LoginForm() {
     setEmailError(null)
 
     if (!isValidEmail(normalizedEmail)) {
-      setEmailError('يرجى إدخال بريد إلكتروني صالح مثل name@example.com.')
+      setEmailError('Please enter a valid email address like name@example.com.')
       return
     }
 
     if (!password) {
-      setError('يرجى إدخال كلمة المرور.')
+      setError('Please enter a password.')
       return
     }
 
     if (isSignup && !confirmPassword) {
-      setError('يرجى تأكيد كلمة المرور.')
+      setError('Please confirm your password.')
       return
     }
 
     if (isSignup && password !== confirmPassword) {
-      setError('كلمتا المرور غير متطابقتين.')
+      setError('The passwords do not match.')
       return
     }
 
     if (isSignup && password.length < 6) {
-      setError('يجب أن تتكون كلمة المرور من 6 خانات على الأقل.')
+      setError('Password must be at least 6 characters long.')
       return
     }
 
@@ -64,10 +64,10 @@ export default function LoginForm() {
       if (error) return setError(error.message)
       setConfirmPassword('')
       if (!data.session) {
-        setInfo('تم إنشاء الحساب بنجاح! يرجى التحقق من بريدك الإلكتروني لتأكيده، ثم تسجيل الدخول.')
+        setInfo('the account has been created. Please check your email to confirm your account.')
         setMode('signin')
       } else {
-        setInfo('تم إنشاء الحساب وتسجيل الدخول بنجاح.')
+        setInfo('the account has been created and you are now signed in.')
       }
     } else {
       const { error } = await supabase.auth.signInWithPassword({ email: normalizedEmail, password })
@@ -117,40 +117,21 @@ export default function LoginForm() {
           }}
         />
 
-        {/* Header Section */}
+        {/* Header Section: ReplAI logo */}
         <div style={{ textAlign: 'center', marginBottom: '32px' }}>
-          <div
+          <img
+            src="/logo-light.png"
+            alt="ReplAI"
             style={{
-              width: '56px',
-              height: '56px',
-              background: 'linear-gradient(135deg, rgba(6, 182, 212, 0.2) 0%, rgba(59, 130, 246, 0.2) 100%)',
-              border: '1px solid rgba(6, 182, 212, 0.3)',
-              color: '#38BDF8',
-              borderRadius: '16px',
-              display: 'inline-flex',
-              alignItems: 'center',
-              justifyContent: 'center',
-              marginBottom: '16px',
-              boxShadow: '0 0 20px rgba(6, 182, 212, 0.15)',
+              width: '210px',
+              maxWidth: '75%',
+              height: 'auto',
+              display: 'block',
+              margin: '0 auto 14px',
             }}
-          >
-            <svg width="26" height="26" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
-              <path d="M21 15a2 2 0 0 1-2 2H7l-4 4V5a2 2 0 0 1 2-2h14a2 2 0 0 1 2 2z"></path>
-            </svg>
-          </div>
-          <h1
-            style={{
-              fontSize: '24px',
-              fontWeight: '700',
-              color: '#F8FAFC',
-              margin: '0 0 8px 0',
-              letterSpacing: '-0.02em',
-            }}
-          >
-            LUJAIN'S Inbox
-          </h1>
+          />
           <p style={{ fontSize: '14px', color: '#94A3B8', margin: 0 }}>
-            {isSignup ? 'أنشئ حسابك الجديد للبدء' : 'سجّل الدخول وإدارة محادثات فريقك'}
+            {isSignup ? 'Create your account to get started' : 'Where every message gets a smart reply'}
           </p>
         </div>
 
@@ -166,7 +147,7 @@ export default function LoginForm() {
                 marginBottom: '8px',
               }}
             >
-              البريد الإلكتروني
+              Your Email
             </label>
             <input
               type="email"
@@ -208,11 +189,11 @@ export default function LoginForm() {
                 marginBottom: '8px',
               }}
             >
-              كلمة المرور
+              Password
             </label>
             <input
               type="password"
-              placeholder={isSignup ? '6 خانات على الأقل' : '••••••••'}
+              placeholder={isSignup ? 'At least 6 characters' : '••••••••'}
               value={password}
               onChange={(e) => setPassword(e.target.value)}
               style={{
@@ -243,11 +224,11 @@ export default function LoginForm() {
                   marginBottom: '8px',
                 }}
               >
-                تأكيد كلمة المرور
+                Confirm Password
               </label>
               <input
                 type="password"
-                placeholder="أعد كتابة كلمة المرور"
+                placeholder="Confirm Password"
                 value={confirmPassword}
                 onChange={(e) => setConfirmPassword(e.target.value)}
                 style={{
@@ -267,7 +248,7 @@ export default function LoginForm() {
               />
               {confirmPassword && password !== confirmPassword && (
                 <p style={{ color: '#F87171', fontSize: '12px', marginTop: '6px' }}>
-                  كلمتا المرور غير متطابقتين.
+                  The passwords do not match.
                 </p>
               )}
             </div>
@@ -341,7 +322,7 @@ export default function LoginForm() {
               transition: 'all 0.2s ease',
             }}
           >
-            {loading ? 'جاري التحميل...' : isSignup ? 'إنشاء حساب جديد' : 'تسجيل الدخول'}
+            {loading ? 'Loading...' : isSignup ? 'Create new account' : 'Login'}
           </button>
         </form>
 
@@ -360,7 +341,7 @@ export default function LoginForm() {
               transition: 'color 0.2s ease',
             }}
           >
-            {isSignup ? 'لديك حساب بالفعل؟ تسجيل الدخول' : 'حساب جديد؟ أنشئ حسابك الآن'}
+            {isSignup ? 'Already have an account? Sign in' : 'New to our platform? Create your account now'}
           </button>
         </div>
       </div>
