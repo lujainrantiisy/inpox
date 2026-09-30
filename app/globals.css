@@ -51,7 +51,7 @@ body::after {
   filter: blur(100px);
 }
 
-/* Cyan top-left (RTL top-right visually) */
+/* Cyan top-right visually in RTL */
 body::before {
   top: -10%;
   inset-inline-start: -10%;
@@ -60,7 +60,7 @@ body::before {
   background: radial-gradient(circle, rgba(34, 211, 238, 0.11) 0%, rgba(0, 0, 0, 0) 70%);
 }
 
-/* Emerald bottom-right (RTL bottom-left visually) */
+/* Emerald bottom-left visually in RTL */
 body::after {
   bottom: -10%;
   inset-inline-end: -10%;
@@ -107,7 +107,7 @@ body::after {
 
 /* Sidebar (Positioned Right in RTL) */
 .sidebar {
-  width: 320px;
+  width: 330px;
   flex-shrink: 0;
   display: flex;
   flex-direction: column;
@@ -122,11 +122,11 @@ body::after {
 }
 
 .sidebar-header {
-  padding: 16px 20px;
+  padding: 16px 16px 12px;
   border-bottom: 1px solid var(--border);
   display: flex;
   flex-direction: column;
-  gap: 12px;
+  gap: 10px;
 }
 
 .sidebar-title-row {
@@ -150,9 +150,115 @@ body::after {
   box-shadow: 0 0 10px var(--cyan);
 }
 
+/* Action Buttons Flex Row Layout */
 .sidebar-actions {
   display: flex;
-  gap: 8px;
+  align-items: center;
+  gap: 6px;
+  width: 100%;
+}
+
+.sidebar-actions .btn {
+  font-family: inherit;
+  transition: all 150ms var(--ease-out);
+}
+
+.language-toggle {
+  flex: 0 0 auto;
+  min-width: 72px;
+  height: 36px;
+  padding-inline: 10px;
+  font-size: 12px;
+  white-space: nowrap;
+}
+
+.sidebar-filters {
+  padding: 0 12px 12px;
+  border-bottom: 1px solid var(--border);
+}
+
+.search-control {
+  position: relative;
+  margin-bottom: 10px;
+}
+
+.search-input {
+  width: 100%;
+  height: 36px;
+  padding-block: 0;
+  padding-inline-start: 38px;
+  padding-inline-end: 38px;
+  border: 1px solid var(--border, rgba(255, 255, 255, 0.1));
+  border-radius: 8px;
+  background: rgba(255, 255, 255, 0.04);
+  color: var(--text, #fff);
+  outline: none;
+  font: inherit;
+  font-size: 13px;
+  box-sizing: border-box;
+}
+
+.search-input:focus {
+  border-color: var(--cyan);
+  box-shadow: 0 0 0 2px rgba(34, 211, 238, 0.1);
+}
+
+.search-icon {
+  position: absolute;
+  inset-inline-start: 12px;
+  top: 50%;
+  width: 16px;
+  height: 16px;
+  transform: translateY(-50%);
+  color: var(--text-muted, #64748B);
+  pointer-events: none;
+}
+
+.mood-filters {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  overflow-x: auto;
+}
+
+.mood-filter {
+  flex: 0 0 auto;
+  min-width: 34px;
+  height: 28px;
+  padding-inline: 8px;
+  border: 1px solid rgba(255, 255, 255, 0.1);
+  border-radius: 20px;
+  background: rgba(255, 255, 255, 0.03);
+  color: var(--text-muted);
+  cursor: pointer;
+  font: inherit;
+  font-size: 12px;
+  transition: all 150ms var(--ease-out);
+}
+
+.mood-filter.active,
+.mood-filter:hover {
+  border-color: var(--cyan);
+  background: rgba(34, 211, 238, 0.15);
+  color: var(--cyan);
+}
+
+.mood-filters::-webkit-scrollbar {
+  display: none;
+}
+
+.mood-filters {
+  -ms-overflow-style: none;
+  scrollbar-width: none;
+}
+
+/* Hide scrollbar for mood horizontal filters */
+.sidebar div[aria-label="Filter by mood"]::-webkit-scrollbar {
+  display: none;
+}
+.sidebar div[aria-label="Filter by mood"] {
+  -ms-overflow-style: none;
+  scrollbar-width: none;
 }
 
 /* Conversation List */
@@ -227,13 +333,15 @@ body::after {
   overflow: hidden;
   text-overflow: ellipsis;
 }
+
 .convo-time {
   font-size: 11px;
   color: var(--text-muted);
 }
+
 .mood-badge {
   flex-shrink: 0;
-  font-size: 16px;
+  font-size: 15px;
   line-height: 1;
 }
 
@@ -262,7 +370,7 @@ body::after {
   flex-shrink: 0;
 }
 
-/* Badges / Chips */
+/* Channel Badge / Chips */
 .channel-pill {
   font-size: 10px;
   font-weight: 600;
@@ -275,6 +383,7 @@ body::after {
   align-items: center;
   gap: 4px;
   backdrop-filter: blur(4px);
+  flex-shrink: 0;
 }
 
 /* Chat Thread Panel */
@@ -367,13 +476,13 @@ body::after {
   }
 }
 
-/* Align by role using CSS Logical Properties */
+/* Alignment by role using RTL alignment */
 .row.user {
-  align-items: flex-start;
+  align-items: flex-end;
 }
 
 .row.agent {
-  align-items: flex-end;
+  align-items: flex-start;
 }
 
 .agent-label {
@@ -391,8 +500,8 @@ body::after {
   max-width: 70%;
   padding: 12px 16px;
   border-radius: var(--radius-bubble);
-  font-size: 15px;
-  line-height: 1.7;
+  font-size: 14px;
+  line-height: 1.6;
   white-space: pre-wrap;
   word-wrap: break-word;
   position: relative;
@@ -404,7 +513,7 @@ body::after {
   background: var(--surface-strong);
   border: 1px solid var(--border);
   color: var(--text);
-  border-bottom-right-radius: 4px;
+  border-bottom-left-radius: 4px;
 }
 
 /* Agent Bubble (Cyan-to-Emerald tint) */
@@ -412,7 +521,7 @@ body::after {
   background: linear-gradient(135deg, rgba(34, 211, 238, 0.18) 0%, rgba(16, 185, 129, 0.12) 100%);
   border: 1px solid rgba(34, 211, 238, 0.35);
   color: var(--text);
-  border-bottom-left-radius: 4px;
+  border-bottom-right-radius: 4px;
   box-shadow: 0 0 15px rgba(34, 211, 238, 0.05);
 }
 
@@ -530,15 +639,15 @@ body::after {
   color: var(--text-muted);
 }
 
-/* Buttons */
+/* Base Buttons */
 .btn {
   white-space: nowrap;
   flex-shrink: 0;
   border: 0;
   background: linear-gradient(135deg, var(--cyan) 0%, var(--blue) 100%);
   color: #0B1622;
-  padding: 0 18px;
-  height: 40px;
+  padding: 0 16px;
+  height: 38px;
   border-radius: var(--radius-pill);
   font-weight: 700;
   font-size: 13px;
@@ -584,7 +693,7 @@ body::after {
   flex-shrink: 0;
 }
 
-/* Custom File Attach Icon Button */
+/* Attach Icon Button */
 .attach-btn {
   background: transparent;
   border: none;
@@ -603,7 +712,6 @@ body::after {
   background: rgba(255, 255, 255, 0.05);
 }
 
-/* Hidden Native Input */
 .hidden-file-input {
   display: none;
 }
@@ -616,15 +724,15 @@ body::after {
   align-items: center;
   justify-content: center;
   color: var(--text-muted);
-  font-size: 15px;
+  font-size: 14px;
   text-align: center;
   padding: 24px;
-  gap: 16px;
+  gap: 12px;
 }
 
 .empty-orb {
-  width: 64px;
-  height: 64px;
+  width: 56px;
+  height: 56px;
   border-radius: 50%;
   background: radial-gradient(circle, rgba(34, 211, 238, 0.2) 0%, rgba(34, 211, 238, 0) 70%);
   border: 1px solid rgba(34, 211, 238, 0.3);
@@ -644,7 +752,7 @@ input:focus-visible {
   outline-offset: 2px;
 }
 
-/* Responsive Layout (<768px Mobile) */
+/* Mobile Responsiveness (<768px) */
 @media (max-width: 767px) {
   .app {
     padding: 0;
